@@ -1,0 +1,97 @@
+# ARQUITECTURA DE RED 2.0: PROPUESTA DE MODERNIZACIÓN
+
+## 1. EVALUACIÓN DE LA SITUACIÓN ACTUAL
+
+**Alcance de la Red Actual:**
+La red es una **LAN plana** con topología física de **Estrella**. Todos los dispositivos (PC0, Laptop0, Server0, Printer0) están conectados a un único **Switch0**, que a su vez se conecta a un Router0. Opera como un solo segmento de red (una sola subred IP).
+
+**Problemas Potenciales (Sin Mejoras):**
+1. **Riesgo de Seguridad Crítico:** Un solo segmento significa que un compromiso en cualquier PC da acceso directo a todos los datos y servidores, violando el aislamiento necesario para Contabilidad y Tecnología.
+2. **Bajo Rendimiento y Congestión:** El tráfico de difusión ("broadcast") de todos los 100 dispositivos futuros colapsará el único switch, causando latencia y bajo rendimiento general.
+3. **Falta de Control y Escalabilidad:** Es imposible aplicar políticas de seguridad diferenciadas (por ejemplo, permitir Mercadeo pero bloquear Contabilidad) o gestionar el fallo de manera aislada.
+
+---
+
+## 2. DISEÑO DE LA ARQUITECTURA PROPUESTA
+
+**Topología de Red:**
+Se utilizará una **Topología Jerárquica** con un diseño de **Estrella Extendida**, basado en **Segmentación por VLANs**.
+
+**Conexión de Dispositivos y Servidores:**
+1. **Segmentación:** Crearemos tres VLANs, una por departamento, para aislar el tráfico:
+    * **VLAN 10: Mercadeo** (30 dispositivos)
+    * **VLAN 20: Tecnología** (40 dispositivos)
+    * **VLAN 30: Contabilidad** (15 dispositivos)
+2. **Servidores Privados:** Los servidores de Mercadeo y Contabilidad se conectarán solo a sus VLANs respectivas, prohibiendo el acceso desde fuera por defecto.
+3. **Servidor de Tecnología (Compartido):** Estará en la VLAN 20, pero el Firewall permitirá el tráfico desde las VLANs 10 y 30 hacia él.
+4. **Enrutamiento:** El **Router Principal** o un Switch Capa 3 realizará el **Enrutamiento Inter-VLAN**.
+
+---
+
+## 3. EQUIPOS DE RED REQUERIDOS
+
+**Dispositivos:**
+* **Firewall de Última Generación (NGFW):** Esencial para la seguridad del perímetro y el control de tráfico entre VLANs.
+* **Router Principal (o Router con capacidad de Firewall):** Para gestionar la salida a Internet y el enrutamiento entre subredes.
+* **Switches Administrables de Capa 2/3 (Acceso):** Necesarios para soportar la creación y el etiquetado de **VLANs (802.1Q)**. Mínimo 1 Gbps en los puertos.
+
+**Requerimientos de Capacidad (Subneteo):**
+Se utilizará un espacio de direcciones IP privado (ej., 192.168.X.0/24) y se segmentará con **CIDR (Classless Inter-Domain Routing)** para acomodar los 100 dispositivos:
+* **Mercadeo (30):** Subred con capacidad para ~60 hosts (ej., /26).
+* **Tecnología (40):** Subred con capacidad para ~60 hosts (ej., /26).
+* **Contabilidad (15):** Subred con capacidad para ~30 hosts (ej., /27).
+* *El espacio restante se reservará para crecimiento futuro.*
+
+---
+
+## 4. SEGURIDAD DE LA RED
+
+**Medidas de Seguridad Necesarias:**
+1. **Aislamiento por VLAN:** Segmentación estricta del tráfico departamental (L2/L3).
+2. **Filtrado NGFW:** Inspección profunda de paquetes y prevención de intrusiones en la frontera de la red y entre VLANs.
+3. **VPN IPsec:** Uso obligatorio para el acceso remoto.
+4. **WPA2/WPA3:** Encriptación robusta para cualquier red inalámbrica.
+
+**Políticas de Personal:**
+* **Política de Contraseñas Fuertes:** Cambio obligatorio periódico (ej., cada 90 días) y complejidad de 12+ caracteres.
+* **Política de Uso Aceptable (PUA):** Definición clara de sitios y aplicaciones prohibidas.
+* **Capacitación:** Concienciación anual en seguridad (phishing y malware).
+
+**Reglas del Firewall (Principios Clave):**
+Se aplicará la regla de **Denegar Implícitamente** (todo lo que no está permitido, está prohibido).
+
+* **PERMITIR:** Acceso de Mercadeo y Contabilidad al **Servidor de Tecnología** (sólo por los puertos de aplicación necesarios, ej., 443).
+* **DENEGAR:** Todo el resto de tráfico entre las VLANs de usuario (Mercadeo <> Contabilidad, Contabilidad <> Mercadeo).
+* **PERMITIR:** Tráfico de salida a Internet (puertos 80, 443, 53) desde las VLANs de usuario.
+
+---
+
+## 5. GESTIÓN DE LA RED Y MANTENIMIENTO
+
+**Gestión y Supervisión:**
+* **Sistema de Gestión de Red (NMS):** Es **conveniente y necesario** (con 100 dispositivos). Herramientas como Nagios o Zabbix, utilizando **SNMP** (Simple Network Management Protocol), monitorearán el rendimiento (CPU, memoria, tráfico) de los switches y el firewall de forma proactiva.
+* **Gestión Segura:** Administrar todos los equipos únicamente a través de **SSH/HTTPS** (deshabilitando Telnet e HTTP).
+
+**Mantenimiento Continuo:**
+* **Actualización Periódica:** Revisión trimestral de **Firmware** en todos los dispositivos de red para aplicar parches de seguridad.
+* **Auditoría de Reglas:** Revisión semestral de las reglas del firewall para eliminar reglas obsoletas o innecesarias.
+* **Procedimiento de Respuesta a Incidentes (IRP):** Documentación formal de los pasos a seguir ante un incidente de seguridad (Contención, Erradicación, Recuperación).
+
+---
+
+## 6. PLAN DE IMPLEMENTACIÓN Y ÉXITO
+
+**Cronograma Estimado:** 5 Semanas.
+
+| Fase | Tarea Principal |
+| :--- | :--- |
+| **Semanas 1-2** | Adquisición de Hardware (Firewall/Switches) y diseño final de **VLANs/Subredes IP**. |
+| **Semanas 3** | Instalación física de Switches/Firewall y configuración de **Enrutamiento Inter-VLAN**. |
+| **Semana 4** | Configuración de **Reglas del Firewall** y **Migración** de dispositivos y servidores (fuera de horario) a las nuevas VLANs. |
+| **Semana 5** | Pruebas de rendimiento, implementación del NMS y **Documentación** final. |
+
+**Evaluación del Éxito (Métricas):**
+El éxito se medirá con las siguientes métricas, recopiladas por el NMS:
+* **Rendimiento:** Reducción de la **Latencia** promedio de la red a menos de 10 ms.
+* **Seguridad:** Aumento de los **Intentos de Conexión Bloqueados** por el firewall y cumplimiento del **Aislamiento de VLANs**.
+* **Disponibilidad:** **Tiempo Activo (Uptime)** de los servicios críticos superior al 99.9%.
